@@ -33,3 +33,4 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+esp32cam/firebase-service-account-key.json

@@ -13,6 +13,7 @@
     "@expo-google-fonts/poppins": "^0.2.3",
     "@expo/vector-icons": "^14.1.0",
     "@lucide/lab": "^0.1.2",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "expo": "53.0.9",
@@ -45,7 +46,7 @@
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5"
   },
-"devDependencies": {
+  "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
     "typescript": "~5.8.3"

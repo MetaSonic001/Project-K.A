@@ -1,0 +1,5 @@
+Flask
+cloudinary
+firebase-admin
+Pillow
+requests

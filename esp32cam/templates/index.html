@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32-CAM Image Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+
+        .control-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            min-width: 150px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background-color: #f39c12;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background-color: #e67e22;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: white;
+            min-width: 200px;
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .images-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .image-info {
+            padding: 15px;
+        }
+
+        .image-source {
+            font-weight: bold;
+            color: #3498db;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .image-timestamp {
+            color: #7f8c8d;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #3498db;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .modal-content {
+            display: block;
+            margin: auto;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #3498db;
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group label {
+                min-width: auto;
+                margin-bottom: 10px;
+            }
+
+            .images-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ESP32-CAM Image Management</h1>
+            <p class="subtitle">Upload, View, and Manage Images from ESP32-CAM via Cloudinary & Firebase</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>Test Random Images:</label>
+                <button id="uploadRandomBtn" class="btn-success">Upload 3 Random Test Images</button>
+                <span class="status-message" id="randomStatus" style="display: none;"></span>
+            </div>
+
+            <div class="control-group">
+                <label>Manual Image Upload:</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="manualFileInput" class="file-input" accept="image/*">
+                    <label for="manualFileInput" class="file-input-label">Choose Image File</label>
+                </div>
+                <button id="uploadManualBtn" disabled>Upload Selected Image</button>
+                <span class="status-message" id="manualStatus" style="display: none;"></span>
+            </div>
+
+            <div class="control-group">
+                <label>View Images:</label>
+                <select id="sourceFilter">
+                    <option value="all">All Images</option>
+                    <option value="esp32">ESP32-CAM Images</option>
+                    <option value="random">Random Test Images</option>
+                </select>
+                <button id="refreshBtn">Refresh Images</button>
+                <button id="deleteAllBtn" class="btn-danger">Delete All Images</button>
+            </div>
+        </div>
+
+        <div class="images-container">
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Total Images</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="esp32Count">0</div>
+                    <div class="stat-label">ESP32 Images</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="randomCount">0</div>
+                    <div class="stat-label">Random Images</div>
+                </div>
+            </div>
+
+            <div id="imagesContainer">
+                <div class="loading">Loading images...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for full-size image viewing -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        let currentImages = [];
+
+        // DOM elements
+        const uploadRandomBtn = document.getElementById('uploadRandomBtn');
+        const manualFileInput = document.getElementById('manualFileInput');
+        const uploadManualBtn = document.getElementById('uploadManualBtn');
+        const sourceFilter = document.getElementById('sourceFilter');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const deleteAllBtn = document.getElementById('deleteAllBtn');
+        const imagesContainer = document.getElementById('imagesContainer');
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const closeModal = document.getElementsByClassName('close')[0];
+
+        // Status elements
+        const randomStatus = document.getElementById('randomStatus');
+        const manualStatus = document.getElementById('manualStatus');
+
+        // Stats elements
+        const totalCount = document.getElementById('totalCount');
+        const esp32Count = document.getElementById('esp32Count');
+        const randomCount = document.getElementById('randomCount');
+
+        // Event listeners
+        uploadRandomBtn.addEventListener('click', uploadRandomImages);
+        manualFileInput.addEventListener('change', handleFileSelect);
+        uploadManualBtn.addEventListener('click', uploadManualImage);
+        sourceFilter.addEventListener('change', loadImages);
+        refreshBtn.addEventListener('click', loadImages);
+        deleteAllBtn.addEventListener('click', deleteAllImages);
+        closeModal.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Show status message
+        function showStatus(element, message, type) {
+            element.textContent = message;
+            element.className = `status-message status-${type}`;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // Upload random images
+        async function uploadRandomImages() {
+            uploadRandomBtn.disabled = true;
+            uploadRandomBtn.textContent = 'Uploading...';
+            
+            try {
+                const response = await fetch('/upload_random_images', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(randomStatus, `${result.message}`, 'success');
+                    loadImages();
+                } else {
+                    showStatus(randomStatus, result.message, 'error');
+                }
+            } catch (error) {
+                showStatus(randomStatus, `Error: ${error.message}`, 'error');
+            } finally {
+                uploadRandomBtn.disabled = false;
+                uploadRandomBtn.textContent = 'Upload 3 Random Test Images';
+            }
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadManualBtn.disabled = false;
+                uploadManualBtn.textContent = `Upload "${file.name}"`;
+            } else {
+                uploadManualBtn.disabled = true;
+                uploadManualBtn.textContent = 'Upload Selected Image';
+            }
+        }
+
+        // Upload manual image
+        async function uploadManualImage() {
+            const file = manualFileInput.files[0];
+            if (!file) return;
+
+            uploadManualBtn.disabled = true;
+            uploadManualBtn.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload_image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(manualStatus, result.message, 'success');
+                    loadImages();
+                    manualFileInput.value = '';
+                    uploadManualBtn.disabled = true;
+                    uploadManualBtn.textContent = 'Upload Selected Image';
+                } else {
+                    showStatus(manualStatus, result.message, 'error');
+                }
+            } catch (error) {
+                showStatus(manualStatus, `Error: ${error.message}`, 'error');
+            } finally {
+                uploadManualBtn.disabled = false;
+            }
+        }
+
+        // Load images
+        async function loadImages() {
+            imagesContainer.innerHTML = '<div class="loading">Loading images...</div>';
+            
+            try {
+                const sourceType = sourceFilter.value;
+                const response = await fetch(`/get_images?source_type=${sourceType}&limit=50`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentImages = result.images;
+                    displayImages(result.images);
+                    updateStats(result.images);
+                } else {
+                    imagesContainer.innerHTML = `<div class="status-error">Error loading images: ${result.message}</div>`;
+                }
+            } catch (error) {
+                imagesContainer.innerHTML = `<div class="status-error">Error loading images: ${error.message}</div>`;
+            }
+        }
+
+        // Display images
+        function displayImages(images) {
+            if (images.length === 0) {
+                imagesContainer.innerHTML = '<div class="status-info">No images found. Upload some images to get started!</div>';
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'images-grid';
+
+            images.forEach(image => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+
+                const sourceColor = image.source_type === 'esp32' ? '#e74c3c' : 
+                                  image.source_type === 'random' ? '#f39c12' : '#3498db';
+
+                card.innerHTML = `
+                    <img src="${image.image_url}" alt="Image" onclick="openModal('${image.image_url}')">
+                    <div class="image-info">
+                        <div class="image-source" style="color: ${sourceColor}">
+                            ${image.source_type.toUpperCase()}
+                        </div>
+                        <div class="image-timestamp">
+                            ${new Date(image.timestamp).toLocaleString()}
+                        </div>
+                        <div class="image-actions">
+                            <button onclick="viewFullImage('${image.image_url}')" class="btn-info">
+                                View Full Size
+                            </button>
+                            <button onclick="deleteImage('${image.id}')" class="btn-danger">
+                                Delete
+                            </button>
+                            <button onclick="copyImageUrl('${image.image_url}')" class="btn-secondary">
+                                Copy URL
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            imagesContainer.innerHTML = '';
+            imagesContainer.appendChild(grid);
+        }
+
+        // Update statistics
+        function updateStats(images) {
+            const total = images.length;
+            const esp32Images = images.filter(img => img.source_type === 'esp32').length;
+            const randomImages = images.filter(img => img.source_type === 'random').length;
+
+            totalCount.textContent = total;
+            esp32Count.textContent = esp32Images;
+            randomCount.textContent = randomImages;
+        }
+
+        // Open modal for full-size image
+        function openModal(imageUrl) {
+            modal.style.display = 'block';
+            modalImage.src = imageUrl;
+        }
+
+        // View full image (open in new tab)
+        function viewFullImage(imageUrl) {
+            window.open(imageUrl, '_blank');
+        }
+
+        // Copy image URL to clipboard
+        async function copyImageUrl(imageUrl) {
+            try {
+                await navigator.clipboard.writeText(imageUrl);
+                alert('Image URL copied to clipboard!');
+            } catch (error) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = imageUrl;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Image URL copied to clipboard!');
+            }
+        }
+
+        // Delete single image
+        async function deleteImage(imageId) {
+            if (!confirm('Are you sure you want to delete this image?')) return;
+
+            try {
+                const response = await fetch(`/delete_image/${imageId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Image deleted successfully!');
+                    loadImages();
+                } else {
+                    alert(`Error deleting image: ${result.message}`);
+                }
+            } catch (error) {
+                alert(`Error deleting image: ${error.message}`);
+            }
+        }
+
+        // Delete all images
+        async function deleteAllImages() {
+            if (!confirm('Are you sure you want to delete ALL images? This action cannot be undone!')) return;
+
+            const deletePromises = currentImages.map(image => 
+                fetch(`/delete_image/${image.id}`, { method: 'DELETE' })
+            );
+
+            try {
+                deleteAllBtn.disabled = true;
+                deleteAllBtn.textContent = 'Deleting...';
+
+                await Promise.all(deletePromises);
+                alert('All images deleted successfully!');
+                loadImages();
+            } catch (error) {
+                alert(`Error deleting images: ${error.message}`);
+            } finally {
+                deleteAllBtn.disabled = false;
+                deleteAllBtn.textContent = 'Delete All Images';
+            }
+        }
+
+        // Load images on page load
+        window.addEventListener('load', loadImages);
+
+        // Auto-refresh every 30 seconds to check for new ESP32 images
+        setInterval(loadImages, 30000);
+    </script>
+</body>
+</html>
